@@ -7,17 +7,14 @@ const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'grocery_app',
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 pool.connect((err, client, release) => {
   if (err) {
     console.log('DATABASE CONNECTION ERROR:', err.message);
-    console.log('DB CONFIG:', {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      user: process.env.DB_USER,
-      database: process.env.DB_NAME,
-    });
   } else {
     console.log('PostgreSQL Connected to', process.env.DB_NAME);
     release();
