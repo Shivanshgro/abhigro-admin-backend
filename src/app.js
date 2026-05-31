@@ -9,9 +9,18 @@ const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const deliveryRoutes = require('./routes/deliveryRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://jolly-pond-019ddcc00.7.azurestaticapps.net',
+    'http://localhost:5173',
+    'http://localhost:4173'
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -24,9 +33,7 @@ app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Backend running successfully'
-  });
+  res.json({ message: 'Backend running successfully' });
 });
 
 module.exports = app;
