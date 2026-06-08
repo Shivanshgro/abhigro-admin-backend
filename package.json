@@ -4,7 +4,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "sync": "node src/scripts/autoSync.js",
+    "migrate": "psql $DATABASE_URL -f src/scripts/migrate_products.sql"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

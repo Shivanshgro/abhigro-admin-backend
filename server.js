@@ -1,0 +1,98 @@
+require("dotenv").config()
+require("./src/config/db")
+
+const express = require("express")
+const cors = require("cors")
+const helmet = require("helmet")
+const compression = require("compression")
+const http = require("http")
+const { Server } = require("socket.io")
+const apiLimiter = require("./src/middleware/rateLimiter")
+
+const authRoutes = require("./src/routes/authRoutes")
+const productRoutes = require("./src/routes/productRoutes")
+const cartRoutes = require("./src/routes/cartRoutes")
+const orderRoutes = require("./src/routes/orderRoutes")
+const wishlistRoutes = require("./src/routes/wishlistRoutes")
+const addressRoutes = require("./src/routes/addressRoutes")
+const paymentRoutes = require("./src/routes/paymentRoutes")
+const notificationRoutes = require("./src/routes/notificationRoutes")
+const couponRoutes = require("./src/routes/couponRoutes")
+const deliveryRoutes = require("./src/routes/deliveryRoutes")
+const adminRoutes = require("./src/routes/adminRoutes")
+const supplierRoutes = require("./src/routes/supplierRoutes")
+const uploadRoutes = require("./src/routes/uploadRoutes")
+const searchProducts = require("./src/controllers/product/searchProducts")
+const orderSocket = require("./src/socket/orderSocket")
+
+const app = express()
+
+// CORS — must be very first middleware
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*")
+  res.header("Access-Control-Allow-Credentials", "true")
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,OPTIONS")
+  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With")
+  if (req.method === "OPTIONS") return res.sendStatus(200)
+  next()
+})
+
+app.use(cors({ origin: "*", credentials: true }))
+
+const server = http.createServer(app)
+const io = new Server(server, {
+  cors: { origin: "*", methods: ["GET", "POST", "PUT", "DELETE"] }
+})
+
+orderSocket(io)
+
+// MIDDLEWARE
+app.use(helmet({ crossOriginResourcePolicy: false, contentSecurityPolicy: false }))
+app.use(compression())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(apiLimiter)
+
+// HEALTH
+app.get("/", (req, res) => res.json({ success: true, message: "AbhiGro Backend Running 🚀" }))
+app.get("/health", (req, res) => res.json({ success: true, database: "Connected", server: "Running" }))
+
+// ROUTES
+app.use("/api/auth", authRoutes)
+app.use("/api/products", productRoutes)
+app.use("/api/cart", cartRoutes)
+app.use("/api/orders", orderRoutes)
+app.use("/api/wishlist", wishlistRoutes)
+app.use("/api/address", addressRoutes)
+app.use("/api/payment", paymentRoutes)
+app.use("/api/notifications", notificationRoutes)
+app.use("/api/coupons", couponRoutes)
+app.use("/api/delivery-slots", deliveryRoutes)
+app.use("/api/admin", adminRoutes)
+app.use("/api/supplier", supplierRoutes)
+app.use("/api/upload", uploadRoutes)
+// NOTE: profile endpoints are served at /api/auth/profile — no duplicate mount needed
+app.get("/api/search", searchProducts)
+
+const subscriptionRoutes = require("./src/routes/subscriptionRoutes")
+const startSubscriptionCron = require("./src/jobs/subscriptionCron")
+app.use("/api/subscription", subscriptionRoutes)
+startSubscriptionCron()
+
+// 404
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route Not Found" })
+})
+
+// ERROR
+app.use((err, req, res, next) => {
+  console.log("SERVER ERROR:", err)
+  res.status(500).json({ success: false, message: "Internal Server Error" })
+})
+
+const PORT = process.env.PORT || 5000
+server.listen(PORT, () => {
+  console.log(`AbhiGro Backend running on port ${PORT}`)
+})
+// Start hourly stock sync job
+require("./src/jobs/stockSyncJob")
