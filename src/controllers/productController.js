@@ -54,7 +54,7 @@ exports.getProducts = async (req, res) => {
              s.shop_name
       FROM products p
       LEFT JOIN shops s ON s.id = p.shop_id
-      WHERE p.is_active = true
+      WHERE p.is_active IS NOT FALSE
     `;
     const params = [];
 
