@@ -50,10 +50,8 @@ exports.getProducts = async (req, res) => {
     const { category, shop_id, stock_status, search } = req.query;
 
     let q = `
-      SELECT p.*,
-             s.shop_name
+      SELECT p.*
       FROM products p
-      -- LEFT JOIN shops s ON s.id = p.shop_id
       WHERE p.is_active IS NOT FALSE
     `;
     const params = [];
@@ -266,3 +264,4 @@ exports.runStockCheck = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
