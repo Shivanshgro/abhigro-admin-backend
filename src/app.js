@@ -14,7 +14,8 @@ const app = express();
 
 app.use(cors({
   origin: [
-    'https://jolly-pond-019ddcc00.7.azurestaticapps.net',
+    'https://white-meadow-04b69e400.azurestaticapps.net',
+    'https://white-meadow-04b69e400.7.azurestaticapps.net',
     'http://localhost:5173',
     'http://localhost:4173'
   ],
