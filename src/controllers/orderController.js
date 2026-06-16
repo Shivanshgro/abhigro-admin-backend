@@ -7,10 +7,10 @@ exports.createOrder = async (req, res) => {
     await client.query('BEGIN');
 
     const cartResult = await client.query(
-      `SELECT cart_items.product_id, cart_items.quantity, products.price
-       FROM cart_items
-       JOIN products ON cart_items.product_id = products.id
-       WHERE cart_items.user_id = $1`,
+      `SELECT cart.product_id, cart.quantity, products.price
+       FROM cart
+       JOIN products ON cart.product_id = products.id
+       WHERE cart.user_id = $1`,
       [user_id]
     );
 
@@ -38,7 +38,7 @@ exports.createOrder = async (req, res) => {
     }
 
     // Delete cart_items first (child), then cart rows if any
-    await client.query('DELETE FROM cart_items WHERE user_id = $1', [user_id]);
+    await client.query('DELETE FROM cart WHERE user_id = $1', [user_id]);
 
     await client.query('COMMIT');
     res.status(201).json({ message: 'Order created successfully', order });

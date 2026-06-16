@@ -24,14 +24,20 @@ exports.createPayment = async (req, res) => {
 
 exports.getPayments = async (req, res) => {
   try {
-    const user_id = req.user.id;
-
-    const result = await pool.query(
-      `SELECT * FROM payments
-       WHERE user_id = $1
-       ORDER BY id DESC`,
-      [user_id]
-    );
+    // Admin sees ALL payments; regular user sees only their own
+    let result;
+    if (req.user.role === 'admin') {
+      result = await pool.query(
+        `SELECT p.*, u.name AS customer_name
+         FROM payments p LEFT JOIN users u ON u.id = p.user_id
+         ORDER BY p.id DESC`
+      );
+    } else {
+      result = await pool.query(
+        `SELECT * FROM payments WHERE user_id = $1 ORDER BY id DESC`,
+        [req.user.id]
+      );
+    }
 
     res.json({
       message: 'Payments fetched successfully',
