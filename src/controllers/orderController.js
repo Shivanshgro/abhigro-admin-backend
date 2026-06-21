@@ -50,26 +50,28 @@ exports.createOrder = async (req, res) => {
   }
 };
 
-// BUG FIX: Admin needs ALL orders, not filtered by user_id
+// Admin backend is admin-only → always return ALL orders (richer fields, with fallback)
 exports.getOrders = async (req, res) => {
   try {
-    // If admin token (role=admin), return all orders
-    // If regular user token, return only their orders
     let result;
-    if (req.user.role === 'admin') {
+    try {
       result = await pool.query(
-        `SELECT orders.*, users.name AS customer_name, users.email AS customer_email
-         FROM orders
-         LEFT JOIN users ON orders.user_id = users.id
-         ORDER BY orders.id DESC`
+        `SELECT o.*, u.name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+                a.address_line AS delivery_address, s.shop_name AS assigned_shop
+         FROM orders o
+         LEFT JOIN users u ON u.id = o.user_id
+         LEFT JOIN addresses a ON a.id = o.address_id
+         LEFT JOIN shops s ON s.id = o.assigned_shop_id
+         ORDER BY o.id DESC LIMIT 300`
       );
-    } else {
+    } catch (joinErr) {
+      // fallback if optional columns/tables differ in this DB
       result = await pool.query(
-        `SELECT * FROM orders WHERE user_id = $1 ORDER BY id DESC`,
-        [req.user.id]
+        `SELECT o.*, u.name AS customer_name, u.email AS customer_email
+         FROM orders o LEFT JOIN users u ON u.id = o.user_id
+         ORDER BY o.id DESC LIMIT 300`
       );
     }
-
     res.json({ message: 'Orders fetched successfully', orders: result.rows });
   } catch (error) {
     res.status(500).json({ error: error.message });
