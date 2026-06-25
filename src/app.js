@@ -12,7 +12,15 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({
+  origin: [
+    'https://white-meadow-04b69e400.azurestaticapps.net',
+    'https://white-meadow-04b69e400.7.azurestaticapps.net',
+    'http://localhost:5173',
+    'http://localhost:4173'
+  ],
+  credentials: true
+}));
 
 app.use(express.json());
 
