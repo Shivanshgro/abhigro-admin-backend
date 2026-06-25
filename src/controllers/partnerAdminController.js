@@ -1,23 +1,23 @@
-﻿const pool = require("../config/db");
+﻿const pool = require('../config/db');
 
 exports.getVendors = async (req, res) => {
   try {
-    const r = await pool.query("SELECT * FROM shops ORDER BY id DESC");
+    const r = await pool.query('SELECT * FROM shops ORDER BY id DESC');
     res.json(r.rows);
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
 exports.approveVendor = async (req, res) => {
   try {
-    await pool.query("UPDATE shops SET is_active = true WHERE id = $1", [req.params.id]);
-    res.json({ success: true, message: "Vendor approved" });
+    await pool.query('UPDATE shops SET is_active = true WHERE id = \', [req.params.id]);
+    res.json({ success: true, message: 'Vendor approved' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
 exports.disableVendor = async (req, res) => {
   try {
-    await pool.query("UPDATE shops SET is_active = false WHERE id = $1", [req.params.id]);
-    res.json({ success: true, message: "Vendor disabled" });
+    await pool.query('UPDATE shops SET is_active = false WHERE id = \', [req.params.id]);
+    res.json({ success: true, message: 'Vendor disabled' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
@@ -30,14 +30,14 @@ exports.getDeliveryPartners = async (req, res) => {
 
 exports.approveDeliveryPartner = async (req, res) => {
   try {
-    await pool.query("UPDATE users SET role = 'delivery' WHERE id = $1", [req.params.id]);
-    res.json({ success: true, message: "Delivery partner approved" });
+    await pool.query("UPDATE users SET role = 'delivery' WHERE id = \", [req.params.id]);
+    res.json({ success: true, message: 'Delivery partner approved' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
 exports.disableDeliveryPartner = async (req, res) => {
   try {
-    await pool.query("UPDATE users SET role = 'customer' WHERE id = $1", [req.params.id]);
-    res.json({ success: true, message: "Delivery partner disabled" });
+    await pool.query("UPDATE users SET role = 'customer' WHERE id = \", [req.params.id]);
+    res.json({ success: true, message: 'Delivery partner disabled' });
   } catch (e) { res.status(500).json({ message: e.message }); }
 };
