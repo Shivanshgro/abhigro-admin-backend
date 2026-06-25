@@ -1,56 +1,53 @@
 const pool = require('../config/db');
 
-// ── Dashboard stats ──────────────────────────────────────────
-exports.getDashboardStats = async (req, res) => {
-  try {
-    const stats = {};
-    const safe = async (q) => {
-      try { const r = await pool.query(q); return Number(r.rows[0].count); }
-      catch (e) { return 0; }
-    };
-    stats.totalUsers   = await safe(`SELECT COUNT(*) FROM users`);
-    stats.totalOrders  = await safe(`SELECT COUNT(*) FROM orders`);
-    stats.totalShops   = await safe(`SELECT COUNT(*) FROM shops`);
-    stats.totalProducts= await safe(`SELECT COUNT(*) FROM products`);
-
-    let revenue = 0;
-    try {
-      const r = await pool.query(`SELECT COALESCE(SUM(total_amount),0) AS sum FROM orders`);
-      revenue = Number(r.rows[0].sum);
-    } catch (e) { revenue = 0; }
-    stats.totalRevenue = revenue;
-
-    let recentOrders = [];
-    try {
-      const r = await pool.query(`SELECT id, total_amount, status, created_at FROM orders ORDER BY id DESC LIMIT 10`);
-      recentOrders = r.rows;
-    } catch (e) { recentOrders = []; }
-    stats.recentOrders = recentOrders;
-
-    res.json(stats);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
-
-// ── Users ────────────────────────────────────────────────────
-exports.getUsers = async (req, res) => {
+// ── Vendors (shops) ──────────────────────────────────────────
+exports.getVendors = async (req, res) => {
   try {
     const r = await pool.query(
-      `SELECT id, name, email, phone, role, created_at FROM users ORDER BY id DESC`
+      `SELECT s.*, u.name AS owner_account_name, u.phone AS owner_phone
+       FROM shops s LEFT JOIN users u ON u.id = s.owner_user_id
+       ORDER BY s.is_active ASC, s.id DESC`
     );
-    res.json({ users: r.rows });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+    res.json({ vendors: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-exports.updateUserRole = async (req, res) => {
+exports.approveVendor = async (req, res) => {
   try {
-    const { role } = req.body;
-    await pool.query(`UPDATE users SET role=$1 WHERE id=$2`, [role, req.params.id]);
-    res.json({ message: 'User role updated' });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+    await pool.query(`UPDATE shops SET is_active=true, is_online=true WHERE id=$1`, [req.params.id]);
+    res.json({ message: 'Vendor approved' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+exports.disableVendor = async (req, res) => {
+  try {
+    await pool.query(`UPDATE shops SET is_active=false WHERE id=$1`, [req.params.id]);
+    res.json({ message: 'Vendor disabled' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+// ── Delivery partners ────────────────────────────────────────
+exports.getDeliveryPartners = async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT d.*, u.name AS account_name FROM delivery_partners d
+       LEFT JOIN users u ON u.id = d.user_id
+       ORDER BY d.is_approved ASC, d.id DESC`
+    );
+    res.json({ partners: r.rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+exports.approveDeliveryPartner = async (req, res) => {
+  try {
+    await pool.query(`UPDATE delivery_partners SET is_approved=true, updated_at=NOW() WHERE id=$1`, [req.params.id]);
+    res.json({ message: 'Delivery partner approved' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+};
+
+exports.disableDeliveryPartner = async (req, res) => {
+  try {
+    await pool.query(`UPDATE delivery_partners SET is_approved=false, updated_at=NOW() WHERE id=$1`, [req.params.id]);
+    res.json({ message: 'Delivery partner disabled' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 };
