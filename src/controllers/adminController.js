@@ -1,33 +1,39 @@
 const pool = require('../config/db');
 
-const num = async (q) => {
-  try { const r = await pool.query(q); return Number(r.rows[0].count); }
-  catch (e) { return 0; }
-};
-
+// ── Dashboard stats ──────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
   try {
     const stats = {};
-    stats.total_users      = await num(`SELECT COUNT(*) FROM users`);
-    stats.total_shops      = await num(`SELECT COUNT(*) FROM shops`);
-    stats.total_products   = await num(`SELECT COUNT(*) FROM products`);
-    stats.total_orders     = await num(`SELECT COUNT(*) FROM orders`);
-    stats.total_deliveries = await num(`SELECT COUNT(*) FROM orders WHERE delivery_boy_id IS NOT NULL`);
-    stats.total_pharmacies = await num(`SELECT COUNT(*) FROM pharmacies`);
+    const safe = async (q) => {
+      try { const r = await pool.query(q); return Number(r.rows[0].count); }
+      catch (e) { return 0; }
+    };
+    stats.totalUsers   = await safe(`SELECT COUNT(*) FROM users`);
+    stats.totalOrders  = await safe(`SELECT COUNT(*) FROM orders`);
+    stats.totalShops   = await safe(`SELECT COUNT(*) FROM shops`);
+    stats.totalProducts= await safe(`SELECT COUNT(*) FROM products`);
 
     let revenue = 0;
     try {
       const r = await pool.query(`SELECT COALESCE(SUM(total_amount),0) AS sum FROM orders`);
-      revenue = Math.round(Number(r.rows[0].sum));
+      revenue = Number(r.rows[0].sum);
     } catch (e) { revenue = 0; }
-    stats.total_revenue = revenue;
+    stats.totalRevenue = revenue;
 
-    res.json({ stats });
+    let recentOrders = [];
+    try {
+      const r = await pool.query(`SELECT id, total_amount, status, created_at FROM orders ORDER BY id DESC LIMIT 10`);
+      recentOrders = r.rows;
+    } catch (e) { recentOrders = []; }
+    stats.recentOrders = recentOrders;
+
+    res.json(stats);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 };
 
+// ── Users ────────────────────────────────────────────────────
 exports.getUsers = async (req, res) => {
   try {
     const r = await pool.query(
